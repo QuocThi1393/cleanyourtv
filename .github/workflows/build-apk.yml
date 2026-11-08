@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -35,3 +35,12 @@ jobs:
           name: cleanyourtv-launcher-apk
           path: launcher/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
+      - name: Publish the APK as a Release (Code page -> Releases, right side)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "apk-${{ github.run_number }}" \
+            launcher/app/build/outputs/apk/release/app-release.apk \
+            --repo "${{ github.repository }}" \
+            --title "Giao dien TV - ban build ${{ github.run_number }}" \
+            --notes "APK cho TV Xiaomi MiTV-MOOQ0. Tai file app-release.apk ben duoi."
