@@ -43,6 +43,7 @@ final class ClockScene {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Random random = new Random();
     private final View content;
+    private final android.widget.TextView lunarView;
     private final ClockRefresh clockRefresh;
     private final ImageView ambient;
     private final GradientDrawable glow;
@@ -68,6 +69,7 @@ final class ClockScene {
         @Override
         public void run() {
             moveClock();
+            showLunar();
             shiftGlow();
             advanceWallpaper();
             handler.postDelayed(this, MOVE_MS);
@@ -77,6 +79,7 @@ final class ClockScene {
     /** root is the inflated dream_clock layout. */
     ClockScene(View root) {
         content = root.findViewById(R.id.dreamContent);
+        lunarView = root.findViewById(R.id.dreamLunar);
         clockRefresh = new ClockRefresh(content);
         ambient = root.findViewById(R.id.dreamAmbient);
         glow = new GradientDrawable();
@@ -88,7 +91,23 @@ final class ClockScene {
         setGlow(PALETTE[colorIndex]);
     }
 
+    /** The Vietnamese lunar date under the clock: "Mùng 1 tháng 10 âm lịch · Bính Ngọ" (UTC+7 calendar). */
+    private void showLunar() {
+        if (lunarView == null) return;
+        Resources res = lunarView.getResources();
+        java.util.Calendar c = java.util.Calendar.getInstance();
+        int[] l = Lunar.fromSolar(c.get(java.util.Calendar.DAY_OF_MONTH), c.get(java.util.Calendar.MONTH) + 1,
+                c.get(java.util.Calendar.YEAR), 7);
+        String[] stems = res.getStringArray(R.array.lunar_stems);
+        String[] branches = res.getStringArray(R.array.lunar_branches);
+        String day = l[0] <= 10 ? "Mùng " + l[0] : String.valueOf(l[0]);
+        String month = "tháng " + l[1] + (l[3] == 1 ? " nhuận" : "");
+        lunarView.setText(day + " " + month + " âm lịch · "
+                + stems[Math.floorMod(l[2] + 6, 10)] + " " + branches[Math.floorMod(l[2] + 8, 12)]);
+    }
+
     void start() {
+        showLunar();
         content.setAlpha(0f);
         content.post(() -> {
             placeClock();
