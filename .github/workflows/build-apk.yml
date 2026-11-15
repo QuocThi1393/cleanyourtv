@@ -28,8 +28,16 @@ jobs:
       - name: Build release APK
         working-directory: launcher
         run: |
+          # Point the Android tools at the folder holding our fixed key; setup-android may point them elsewhere.
+          export ANDROID_USER_HOME="$HOME/.android"
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease
+      - name: Check the APK is signed with launcher/ci-debug.keystore (else the TV refuses the update)
+        run: |
+          APKSIGNER="$ANDROID_HOME/build-tools/34.0.0/apksigner"
+          "$APKSIGNER" verify --print-certs launcher/app/build/outputs/apk/release/app-release.apk | tee certs.txt
+          grep -qi "6273b2a874261f1edc23cd2fef154ca1b936ea620232e39441fcb83155f2d96c" certs.txt \
+            || { echo "::error::APK is not signed with launcher/ci-debug.keystore"; exit 1; }
       - uses: actions/upload-artifact@v4
         with:
           name: cleanyourtv-launcher-apk
